@@ -3,7 +3,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "GeddyTestCocoapods"
-  s.version      = "1.0.0"
+  s.version      = "1.0.1"
   s.summary      = "geddy test"
   s.description  = <<-DESC
 			test daasddfafasasdvdsavasvdsavavdds
@@ -15,7 +15,7 @@ Pod::Spec.new do |s|
 
   s.platform 	 = :ios, "8.0"
   s.source       = { :git => "https://github.com/Geddy1/GeddyTest.git", :tag => "#{s.version}" }
-  s.source_files  = "LeeDatePickerView"
+  s.source_files  = "FPCDatePickerView.{h,m}"
   s.exclude_files = "Classes/Exclude"
 
 end
