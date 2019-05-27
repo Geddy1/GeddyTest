@@ -1,24 +1,24 @@
 //
-//  LeeDatePickerSingleHeadView.m
-//  LeeDatePickerView
+//  FPCDatePickerHeaderView.m
+//  KeyUnitCheck
 //
-//  Created by mac on 2018/11/23.
-//  Copyright © 2018年 mac. All rights reserved.
+//  Created by Geddy on 2019/5/16.
+//  Copyright © 2019 Geddy. All rights reserved.
 //
 
-#import "LeeDatePickerSingleHeadView.h"
+#import "FPCDatePickerHeaderView.h"
 
-@interface LeeDatePickerSingleHeadView()
+@interface FPCDatePickerHeaderView()
 @property (nonatomic, strong) UILabel * timeTitleLabel;
 @property (nonatomic, strong) UILabel * timeValueLabel;
 @property (nonatomic, strong) UIView * lineView;
+
 @end
 
-@implementation LeeDatePickerSingleHeadView
+@implementation FPCDatePickerHeaderView
 
 @synthesize startTimeStr = _startTimeStr;
 @synthesize endTimeStr = _endTimeStr;
-@synthesize delegate = _delegate;
 
 -(instancetype)initWithFrame:(CGRect)frame{
     self = [super initWithFrame:frame];

@@ -1,15 +1,13 @@
 //
-//  LeeDatePickerView.m
-//  LeeDatePickerView
+//  FPCDatePickerView.m
+//  KeyUnitCheck
 //
-//  Created by mac on 2018/9/13.
-//  Copyright © 2018年 mac. All rights reserved.
+//  Created by Geddy on 2019/5/16.
+//  Copyright © 2019 Geddy. All rights reserved.
 //
 
-#import "LeeDatePickerView.h"
-#import "LeeDatePickerHeadView.h"
-#import "LeeDatePickerSingleHeadView.h"
-
+#import "FPCDatePickerView.h"
+#import "FPCDatePickerHeaderView.h"
 typedef enum : NSUInteger {
     DatePickerView_SelectedTimeZone_Start = 0, // 当前选择开始时间
     DatePickerView_SelectedTimeZone_End = 1, // 当前选择结束时间
@@ -20,16 +18,15 @@ typedef enum : NSUInteger {
     CheckDateState_EndTimeEarly = 1, // 结束时间早于开始时间
 } CheckDateState;
 
-@interface LeeDatePickerView()
+@interface FPCDatePickerView()
 <
 UIPickerViewDelegate,
-UIPickerViewDataSource,
-LeeDatePickerHeadViewDelegate
+UIPickerViewDataSource
 >
 
 /*---------View---------*/
 @property (nonatomic, strong) UIView * contentView; // 内容区
-@property (nonatomic, strong) UIView<LeeDatePickerHeadViewProtocol>* contentHeadView;
+@property (nonatomic, strong) UIView * contentHeadView;
 @property (nonatomic, strong) UIPickerView * datePickerView; // 时间选择器
 @property (nonatomic, strong) UIView * contentBottomView; // 内容区底部
 
@@ -61,12 +58,9 @@ LeeDatePickerHeadViewDelegate
 @property (nonatomic, strong) NSTimer * selectPickerTimer; // pickerview 滚动 timer
 
 // Block
-@property (nonatomic, copy) LeeDatePickerViewSelectTimeBlock lDatePickerSelectTimeBlock;
+@property (nonatomic, copy) FPCDatePickerViewSelectTimeBlock lDatePickerSelectTimeBlock;
 // Formatter Style
-@property (nonatomic, assign) LeeDatePickerViewDateFormatterStyle formatterStyle; // 时间格式样式
-// Style
-@property (nonatomic, assign) LeeDatePickerViewStyle style;
-
+@property (nonatomic, assign) FPCDatePickerViewDateFormatterStyle formatterStyle; // 时间格式样式
 @end
 
 static NSString * ymdFormatterStr = @"yyyy-MM-dd"; // yMd时间格式
@@ -81,11 +75,11 @@ static CGFloat sContentCenterHeight = 200.0f; // 内容显示区 中心区高度
 static CGFloat sContentBottomHeight = 50.0f; // 内容显示区 底部高度
 
 static NSInteger sYearCountAfterNow = 20; // 从现在往后数多少年
-static NSInteger sYearCountBeforeNow = 10; // 从现在往前数多少年
+//static NSInteger sYearCountBeforeNow = 10; // 从现在往前数多少年
 
-static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时间间隔
+//static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时间间隔
 
-@implementation LeeDatePickerView
+@implementation FPCDatePickerView
 #pragma mark -
 #pragma mark Super
 // 销毁，顺便把定时器销毁
@@ -98,11 +92,9 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 #pragma mark -
 #pragma mark Init
 // 对外开放的初始方法
-+(void)showLeeDatePickerViewWithStyle:(LeeDatePickerViewStyle)style
-                       formatterStyle:(LeeDatePickerViewDateFormatterStyle)formatterStyle
-                                block:(LeeDatePickerViewSelectTimeBlock)block{
-    LeeDatePickerView * pickerView = [[LeeDatePickerView alloc]init];
-    pickerView.style = style;
++(void)showFPCDatePickerViewWithStyle:(FPCDatePickerViewDateFormatterStyle)formatterStyle
+                                block:(FPCDatePickerViewSelectTimeBlock)block{
+    FPCDatePickerView * pickerView = [[FPCDatePickerView alloc]init];
     pickerView.formatterStyle = formatterStyle;
     pickerView.lDatePickerSelectTimeBlock = ^(NSArray<NSDate *> *dateArray) {
         block(dateArray);
@@ -161,7 +153,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 }
 #pragma mark -
 #pragma mark Set/Get
--(void)setFormatterStyle:(LeeDatePickerViewDateFormatterStyle)formatterStyle{
+-(void)setFormatterStyle:(FPCDatePickerViewDateFormatterStyle)formatterStyle{
     _formatterStyle = formatterStyle;
     [self.datePickerView reloadAllComponents];
     self.startDateStr = [self.formatter stringFromDate:[NSDate date]];
@@ -169,19 +161,9 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
     [self selectPickerDate:[NSDate date]];
 }
 // Set 页面样式
--(void)setStyle:(LeeDatePickerViewStyle)style{
-    _style = style;
-    #pragma mark 内容显示区头部
-    if (self.contentHeadView) {
-        [self.contentHeadView removeFromSuperview];
-    }
-    if (style == LeeDatePickerViewStyle_StartAndEnd) {
-        self.contentHeadView = [[LeeDatePickerHeadView alloc]initWithFrame:CGRectMake(0, 0, self.bounds.size.width, sContentHeadHeight)];
-        self.contentHeadView.delegate = self;
-    }else{
-        self.contentHeadView = [[LeeDatePickerSingleHeadView alloc]initWithFrame:CGRectMake(0, 0, self.bounds.size.width, sContentHeadHeight)];
-        self.contentHeadView.delegate = self;
-    }
+-(void)setStyle{
+
+        self.contentHeadView = [[FPCDatePickerHeaderView alloc]initWithFrame:CGRectMake(0, 0, self.bounds.size.width, sContentHeadHeight)];
     [self.contentView addSubview:self.contentHeadView];
 }
 // GET 显示的时间格式
@@ -192,17 +174,17 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
         _formatter = [[NSDateFormatter alloc]init];
         // 根据时间格式字符串样式 提供 时间格式
         switch (self.formatterStyle) {
-            case LeeDatePickerViewDateFormatterStyle_yMd:
+            case FPCDatePickerViewDateFormatterStyle_yMd:
                 [_formatter setDateFormat:ymdFormatterStr];
                 break;
-            case LeeDatePickerViewDateFormatterStyle_yMdHm:
+            case FPCDatePickerViewDateFormatterStyle_yMdHm:
                 [_formatter setDateFormat:ymdhmFormatterStr];
                 break;
-            case LeeDatePickerViewDateFormatterStyle_yMdHms:
+            case FPCDatePickerViewDateFormatterStyle_yMdHms:
                 [_formatter setDateFormat:ymdhmsFormatterStr];
-            case LeeDatePickerViewDateFormatterStyle_Hms:
+            case FPCDatePickerViewDateFormatterStyle_Hms:
                 [_formatter setDateFormat:hmsFormatterStr];
-            case LeeDatePickerViewDateFormatterStyle_Hm:
+            case FPCDatePickerViewDateFormatterStyle_Hm:
                 [_formatter setDateFormat:hmFormatterStr];
                 break;
             default:
@@ -210,13 +192,14 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
                 break;
         }
     }// 没有提供时间格式判断结束
+
     return _formatter;
 }
 // GET 开始时间
 -(NSDate *)startDate{
     NSDate * date;
-        date = [self.formatter dateFromString:self.startDateStr];
-//    }
+    date = [self.formatter dateFromString:self.startDateStr];
+    //    }
     return date;
 }
 // GET 结束时间
@@ -228,13 +211,13 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 // 设置头部页面显示
 -(void)setStartDateStr:(NSString *)startDateStr{
     _startDateStr = startDateStr;
-    self.contentHeadView.startTimeStr = startDateStr;
+//    self.contentHeadView.startTimeStr = startDateStr;
 }
 // SET 结束时间 字符串
 // 设置头部页面显示
 -(void)setEndDateStr:(NSString *)endDateStr{
     _endDateStr = endDateStr;
-    self.contentHeadView.endTimeStr = endDateStr;
+//    self.contentHeadView.endTimeStr = endDateStr;
 }
 // GET 开始年份，如果为0, 则默认从1970年开始
 -(NSInteger)startYear{
@@ -339,20 +322,20 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 }
 #pragma mark -
 #pragma mark ContentHead Delegate
--(void)leeDatePickerHeadView:(id<LeeDatePickerHeadViewDelegate>)headView select:(LeeDatePickerHeadViewSelectIndex)index{
-    if ([headView isKindOfClass:[LeeDatePickerHeadView class]]) {
-        if (index == LeeDatePickerHeadViewSelectIndex_Start) {
-            self.selectedTimeZone = DatePickerView_SelectedTimeZone_Start;
-            [self selectPickerDate:self.startDate];
-        }else if (index == LeeDatePickerHeadViewSelectIndex_End) {
-            self.selectedTimeZone = DatePickerView_SelectedTimeZone_End;
-            [self selectPickerDate:self.endDate];
-        }
-    }else{
-        self.selectedTimeZone = DatePickerView_SelectedTimeZone_Start;
-        [self selectPickerDate:self.startDate];
-    }
-}
+//-(void)FPCDatePickerHeadView:(id<FPCDatePickerHeadViewDelegate>)headView select:(FPCDatePickerHeadViewSelectIndex)index{
+//    if ([headView isKindOfClass:[FPCDatePickerHeadView class]]) {
+//        if (index == FPCDatePickerHeadViewSelectIndex_Start) {
+//            self.selectedTimeZone = DatePickerView_SelectedTimeZone_Start;
+//            [self selectPickerDate:self.startDate];
+//        }else if (index == FPCDatePickerHeadViewSelectIndex_End) {
+//            self.selectedTimeZone = DatePickerView_SelectedTimeZone_End;
+//            [self selectPickerDate:self.endDate];
+//        }
+//    }else{
+//        self.selectedTimeZone = DatePickerView_SelectedTimeZone_Start;
+//        [self selectPickerDate:self.startDate];
+//    }
+//}
 #pragma mark -
 #pragma mark Action
 // 选中日期
@@ -371,27 +354,44 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
     self.hourIndex = [self.hourArray indexOfObject:[NSString stringWithFormat:@"%02ld",comp.hour]];
     self.minIndex = [self.minArray indexOfObject:[NSString stringWithFormat:@"%02ld",comp.minute]];
     self.secIndex = [self.secArray indexOfObject:[NSString stringWithFormat:@"%02ld",comp.second]];
-    
-    switch (self.formatterStyle) {
-        case LeeDatePickerViewDateFormatterStyle_yMdHms:
-            [self.datePickerView selectRow:self.secIndex inComponent:5 animated:YES];
-            [self pickerView:self.datePickerView didSelectRow:self.secIndex inComponent:5];
-        case LeeDatePickerViewDateFormatterStyle_yMdHm:
-            [self.datePickerView selectRow:self.hourIndex inComponent:3 animated:YES];
-            [self.datePickerView selectRow:self.minIndex inComponent:4 animated:YES];
-            [self pickerView:self.datePickerView didSelectRow:self.hourIndex inComponent:3];
-            [self pickerView:self.datePickerView didSelectRow:self.minIndex inComponent:4];
-        case LeeDatePickerViewDateFormatterStyle_yMd:
-            [self.datePickerView selectRow:self.yearIndex inComponent:0 animated:YES];
-            [self.datePickerView selectRow:self.monthIndex inComponent:1 animated:YES];
-            [self.datePickerView selectRow:self.dayIndex inComponent:2 animated:YES];
-            [self pickerView:self.datePickerView didSelectRow:self.yearIndex inComponent:0];
-            [self pickerView:self.datePickerView didSelectRow:self.monthIndex inComponent:1];
-            [self pickerView:self.datePickerView didSelectRow:self.dayIndex inComponent:2];
-            break;
-        default:
-            break;
+    if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hms) {
+
+//        [self.datePickerView selectRow:self.yearIndex inComponent:0 animated:YES];
+//        [self.datePickerView selectRow:self.monthIndex inComponent:1 animated:YES];
+//        [self.datePickerView selectRow:self.dayIndex inComponent:2 animated:YES];
+        [self.datePickerView selectRow:self.hourIndex inComponent:0 animated:YES];
+        [self.datePickerView selectRow:self.minIndex inComponent:1 animated:YES];
+        [self.datePickerView selectRow:self.secIndex inComponent:2 animated:YES];
+
+//        [self pickerView:self.datePickerView didSelectRow:self.yearIndex inComponent:0];
+//        [self pickerView:self.datePickerView didSelectRow:self.monthIndex inComponent:1];
+//        [self pickerView:self.datePickerView didSelectRow:self.dayIndex inComponent:2];
+        [self pickerView:self.datePickerView didSelectRow:self.hourIndex inComponent:0];
+        [self pickerView:self.datePickerView didSelectRow:self.minIndex inComponent:1];
+        [self pickerView:self.datePickerView didSelectRow:self.secIndex inComponent:2];
+    }else{
+        switch (self.formatterStyle) {
+            case FPCDatePickerViewDateFormatterStyle_yMdHms:
+                [self.datePickerView selectRow:self.secIndex inComponent:5 animated:YES];
+                [self pickerView:self.datePickerView didSelectRow:self.secIndex inComponent:5];
+            case FPCDatePickerViewDateFormatterStyle_yMdHm:
+                [self.datePickerView selectRow:self.hourIndex inComponent:3 animated:YES];
+                [self.datePickerView selectRow:self.minIndex inComponent:4 animated:YES];
+                [self pickerView:self.datePickerView didSelectRow:self.hourIndex inComponent:3];
+                [self pickerView:self.datePickerView didSelectRow:self.minIndex inComponent:4];
+            case FPCDatePickerViewDateFormatterStyle_yMd:
+                [self.datePickerView selectRow:self.yearIndex inComponent:0 animated:YES];
+                [self.datePickerView selectRow:self.monthIndex inComponent:1 animated:YES];
+                [self.datePickerView selectRow:self.dayIndex inComponent:2 animated:YES];
+                [self pickerView:self.datePickerView didSelectRow:self.yearIndex inComponent:0];
+                [self pickerView:self.datePickerView didSelectRow:self.monthIndex inComponent:1];
+                [self pickerView:self.datePickerView didSelectRow:self.dayIndex inComponent:2];
+                break;
+            default:
+                break;
+        }
     }
+
 }
 // 取消操作
 -(void)cancelAction{
@@ -400,7 +400,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 // 确认操作
 -(void)commitAction{
     if (self.lDatePickerSelectTimeBlock) {
-        self.lDatePickerSelectTimeBlock(@[self.startDate,self.endDate]);
+        self.lDatePickerSelectTimeBlock(@[self.startDateStr,self.endDateStr]);
     }
     [self showContentView:NO];
 }
@@ -473,19 +473,19 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 // 展示列数
 -(NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView{
     switch (self.formatterStyle) {
-        case LeeDatePickerViewDateFormatterStyle_yMd: // 年月日 3列
+        case FPCDatePickerViewDateFormatterStyle_yMd: // 年月日 3列
             return 3;
             break;
-        case LeeDatePickerViewDateFormatterStyle_yMdHm: // 年月日时分 5列
+        case FPCDatePickerViewDateFormatterStyle_yMdHm: // 年月日时分 5列
             return 5;
             break;
-        case LeeDatePickerViewDateFormatterStyle_yMdHms:// 年月日时分秒 6列
+        case FPCDatePickerViewDateFormatterStyle_yMdHms:// 年月日时分秒 6列
             return 6;
             break;
-        case LeeDatePickerViewDateFormatterStyle_Hms:// 时分秒 3列
+        case FPCDatePickerViewDateFormatterStyle_Hms:// 时分秒 3列
             return 3;
             break;
-        case LeeDatePickerViewDateFormatterStyle_Hm:// 时分 2列
+        case FPCDatePickerViewDateFormatterStyle_Hm:// 时分 2列
             return 2;
             break;
         default:
@@ -495,9 +495,9 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 }
 // 每一列展示的行数
 -(NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component{
-
     
-    if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hms) {
+    
+    if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hms) {
         //时分秒
         if (component == 0) { // 时
             return self.hourArray.count;
@@ -506,7 +506,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
         }else if (component == 2){ // 妙
             return self.secArray.count;
         }
-    }else if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hm){
+    }else if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hm){
         //时分
         if (component == 0) { // 时
             return self.hourArray.count;
@@ -579,52 +579,62 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
     NSInteger secRowIndex;
     NSString * secStr;
     
-    switch (self.formatterStyle) {
-        case LeeDatePickerViewDateFormatterStyle_yMdHms:
-            secRowIndex = [_datePickerView selectedRowInComponent:5];
-            secStr = [self.secArray objectAtIndex:secRowIndex];
-        case LeeDatePickerViewDateFormatterStyle_yMdHm:
-            hourRowIndex = [_datePickerView selectedRowInComponent:3];
-            minRowIndex = [_datePickerView selectedRowInComponent:4];
-            hourStr = [self.hourArray objectAtIndex:hourRowIndex];
-            minStr = [self.minArray objectAtIndex:minRowIndex];
-        case LeeDatePickerViewDateFormatterStyle_yMd:
-            yearRowIndex = [_datePickerView selectedRowInComponent:0];
-            monthRowIndex = [_datePickerView selectedRowInComponent:1];
-            dayRowIndex = [_datePickerView selectedRowInComponent:2];
-            yearStr = [self.yearArray objectAtIndex:yearRowIndex];
-            monthStr = [self.monthArray objectAtIndex:monthRowIndex];
-            dayStr = [self.dayArray objectAtIndex:dayRowIndex];
-        case LeeDatePickerViewDateFormatterStyle_Hms:
-            hourRowIndex = [_datePickerView selectedRowInComponent:0];
-            minRowIndex = [_datePickerView selectedRowInComponent:1];
-            hourStr = [self.hourArray objectAtIndex:hourRowIndex];
-            minStr = [self.minArray objectAtIndex:minRowIndex];
-            secRowIndex = [_datePickerView selectedRowInComponent:2];
-            secStr = [self.secArray objectAtIndex:secRowIndex];
-        case LeeDatePickerViewDateFormatterStyle_Hm:
-            hourRowIndex = [_datePickerView selectedRowInComponent:0];
-            minRowIndex = [_datePickerView selectedRowInComponent:1];
-            hourStr = [self.hourArray objectAtIndex:hourRowIndex];
-            minStr = [self.minArray objectAtIndex:minRowIndex];
-
-        default:
-            break;
-    }
-    NSString * selectedDateStr;
-    if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_yMd) {
-        selectedDateStr = [NSString stringWithFormat:@"%@.%@.%@",yearStr,monthStr,dayStr];
-    }else if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_yMdHm){
-        selectedDateStr = [NSString stringWithFormat:@"%@.%@.%@ %@:%@",yearStr,monthStr,dayStr,hourStr,minStr];
-    }else if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hms){
-        selectedDateStr = [NSString stringWithFormat:@"%@.%@.%@",hourStr,minStr,secStr];
-    }else if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hm){
-        selectedDateStr = [NSString stringWithFormat:@"%@.%@",hourStr,minStr];
+    if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hms) {
+        hourRowIndex = [_datePickerView selectedRowInComponent:0];
+        minRowIndex = [_datePickerView selectedRowInComponent:1];
+        hourStr = [self.hourArray objectAtIndex:hourRowIndex];
+        minStr = [self.minArray objectAtIndex:minRowIndex];
+        secRowIndex = [_datePickerView selectedRowInComponent:2];
+        secStr = [self.secArray objectAtIndex:secRowIndex];
     }else{
-        selectedDateStr = [NSString stringWithFormat:@"%@.%@.%@ %@:%@:%@",yearStr,monthStr,dayStr,hourStr,minStr,secStr];
+        switch (self.formatterStyle) {
+            case FPCDatePickerViewDateFormatterStyle_yMdHms:
+                secRowIndex = [_datePickerView selectedRowInComponent:5];
+                secStr = [self.secArray objectAtIndex:secRowIndex];
+            case FPCDatePickerViewDateFormatterStyle_yMdHm:
+                hourRowIndex = [_datePickerView selectedRowInComponent:3];
+                minRowIndex = [_datePickerView selectedRowInComponent:4];
+                hourStr = [self.hourArray objectAtIndex:hourRowIndex];
+                minStr = [self.minArray objectAtIndex:minRowIndex];
+            case FPCDatePickerViewDateFormatterStyle_yMd:
+                yearRowIndex = [_datePickerView selectedRowInComponent:0];
+                monthRowIndex = [_datePickerView selectedRowInComponent:1];
+                dayRowIndex = [_datePickerView selectedRowInComponent:2];
+                yearStr = [self.yearArray objectAtIndex:yearRowIndex];
+                monthStr = [self.monthArray objectAtIndex:monthRowIndex];
+                dayStr = [self.dayArray objectAtIndex:dayRowIndex];
+                //        case FPCDatePickerViewDateFormatterStyle_Hms:
+                //            hourRowIndex = [_datePickerView selectedRowInComponent:0];
+                //            minRowIndex = [_datePickerView selectedRowInComponent:1];
+                //            hourStr = [self.hourArray objectAtIndex:hourRowIndex];
+                //            minStr = [self.minArray objectAtIndex:minRowIndex];
+                //            secRowIndex = [_datePickerView selectedRowInComponent:2];
+                //            secStr = [self.secArray objectAtIndex:secRowIndex];
+                //        case FPCDatePickerViewDateFormatterStyle_Hm:
+                //            hourRowIndex = [_datePickerView selectedRowInComponent:0];
+                //            minRowIndex = [_datePickerView selectedRowInComponent:1];
+                //            hourStr = [self.hourArray objectAtIndex:hourRowIndex];
+                //            minStr = [self.minArray objectAtIndex:minRowIndex];
+                
+            default:
+                break;
+        }
+    }
+
+    NSString * selectedDateStr;
+    if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_yMd) {
+        selectedDateStr = [NSString stringWithFormat:@"%@-%@-%@",yearStr,monthStr,dayStr];
+    }else if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_yMdHm){
+        selectedDateStr = [NSString stringWithFormat:@"%@-%@-%@ %@:%@",yearStr,monthStr,dayStr,hourStr,minStr];
+    }else if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hms){
+        selectedDateStr = [NSString stringWithFormat:@"%@:%@:%@",hourStr,minStr,secStr];
+    }else if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hm){
+        selectedDateStr = [NSString stringWithFormat:@"%@:%@",hourStr,minStr];
+    }else{
+        selectedDateStr = [NSString stringWithFormat:@"%@-%@-%@ %@:%@:%@",yearStr,monthStr,dayStr,hourStr,minStr,secStr];
     }
     
-    if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hms){
+    if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hms){
         if (component == 0){
             self.hourIndex = row;
         }else if (component == 1){
@@ -632,7 +642,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
         }else if (component == 2){
             self.secIndex = row;
         }
-    }else if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hm){
+    }else if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hm){
         if (component == 0){
             self.hourIndex = row;
         }else if (component == 1){
@@ -665,17 +675,9 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
             self.secIndex = row;
         }
     }
-    if (self.style == LeeDatePickerViewStyle_Single) {
-        self.startDateStr = [NSString stringWithFormat:@"%@",selectedDateStr] ;
-    }else{
-        if (self.selectedTimeZone == DatePickerView_SelectedTimeZone_Start) {
-            self.startDateStr = selectedDateStr;
-        }else if (self.selectedTimeZone == DatePickerView_SelectedTimeZone_End){
-            self.endDateStr = selectedDateStr;
-        }
-    }
+    self.startDateStr = [NSString stringWithFormat:@"%@",selectedDateStr] ;
     [self reloadPicker:nil];
-
+    
 }
 -(void)reloadPicker:(NSTimer *)timer{
     [self.datePickerView reloadAllComponents];
@@ -696,7 +698,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
 -(NSAttributedString *)pickerView:(UIPickerView *)pickerView attributedTitleForRow:(NSInteger)row forComponent:(NSInteger)component{
     NSString * string;
     BOOL isSelected;
-    if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hms){
+    if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hms){
         if (component == 0){
             string = [NSString stringWithFormat:@"%@时",self.hourArray[row]];
             isSelected = (row == self.hourIndex);
@@ -708,7 +710,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
             isSelected = (row == self.secIndex);
         }
         
-    }else if (self.formatterStyle == LeeDatePickerViewDateFormatterStyle_Hm){
+    }else if (self.formatterStyle == FPCDatePickerViewDateFormatterStyle_Hm){
         if (component == 0){
             string = [NSString stringWithFormat:@"%@时",self.hourArray[row]];
             isSelected = (row == self.hourIndex);
@@ -740,7 +742,7 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
         
     }
     
-
+    
     return [self getAttributeStringWithString:string isSelected:isSelected];
 }
 -(NSAttributedString *)getAttributeStringWithString:(NSString *)string isSelected:(BOOL)isSelected{
@@ -752,15 +754,15 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
     UIFont * font;
     UIColor * color;
     switch (self.formatterStyle) {
-        case LeeDatePickerViewDateFormatterStyle_yMd:
+        case FPCDatePickerViewDateFormatterStyle_yMd:
             selectFontSize = 21.0f;
             unSelectFontSize = 21.0f;
             break;
-        case LeeDatePickerViewDateFormatterStyle_yMdHm:
+        case FPCDatePickerViewDateFormatterStyle_yMdHm:
             selectFontSize = 19.0f;
             unSelectFontSize = 19.0f;
             break;
-        case LeeDatePickerViewDateFormatterStyle_yMdHms:
+        case FPCDatePickerViewDateFormatterStyle_yMdHms:
             selectFontSize = 17.0f;
             unSelectFontSize = 17.0f;
             break;
@@ -781,5 +783,6 @@ static CGFloat selectPickerTimerInterval = 0.1; // pickerview 滚动 timer 时�
     [attributeString addAttribute:NSForegroundColorAttributeName value:color range:range];
     return [[NSAttributedString alloc]initWithAttributedString:attributeString];
 }
+
 
 @end
